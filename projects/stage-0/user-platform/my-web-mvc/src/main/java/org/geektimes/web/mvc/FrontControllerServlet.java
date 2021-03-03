@@ -4,30 +4,38 @@ import org.apache.commons.lang.StringUtils;
 import org.geektimes.web.mvc.controller.Controller;
 import org.geektimes.web.mvc.controller.PageController;
 import org.geektimes.web.mvc.controller.RestController;
-import org.geektimes.web.mvc.header.CacheControlHeaderWriter;
-import org.geektimes.web.mvc.header.annotation.CacheControl;
+import org.geektimes.web.mvc.myannotation.MyComponent;
+import org.geektimes.web.mvc.myannotation.MyController;
+import org.geektimes.web.mvc.myannotation.MyRepository;
+import org.geektimes.web.mvc.myannotation.MyService;
 
+import javax.annotation.Resource;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang.StringUtils.substringAfter;
 
+@MyService
 public class FrontControllerServlet extends HttpServlet {
+
+    private List<String> classPathList = new ArrayList<>();
+
+    private Map<String, Object> beanNameMap = new HashMap<>();
 
     /**
      * 请求路径和 Controller 的映射关系缓存
@@ -44,8 +52,123 @@ public class FrontControllerServlet extends HttpServlet {
      *
      * @param servletConfig
      */
+    @Override
     public void init(ServletConfig servletConfig) {
-        initHandleMethods();
+        // 扫描所有的包
+        doScanner(servletConfig.getInitParameter("scanPackage"));
+
+        // 所有注解类存放到容器中
+        doInstanceBean();
+
+        // 依赖注入
+        doAutowired();
+
+        doHandleController();
+
+//        initHandleMethods();
+    }
+
+    private void doHandleController() {
+        for (Map.Entry<String, Object> entry : beanNameMap.entrySet()) {
+            Object object = entry.getValue();
+            Class<?> clazz = object.getClass();
+            if (!clazz.isAnnotationPresent(MyController.class)) {
+                continue;
+            }
+
+            Path pathFromClass = clazz.getAnnotation(Path.class);
+            String basePath = pathFromClass.value();
+            Method[] publicMethods = clazz.getDeclaredMethods();
+            // 处理方法支持的 HTTP 方法集合
+
+            for (Method method : publicMethods) {
+                Set<String> supportedHttpMethods = findSupportedHttpMethods(method);
+                Path pathFromMethod = method.getAnnotation(Path.class);
+                String requestPath = "";
+                if (pathFromMethod != null) {
+                    requestPath = basePath + pathFromMethod.value();
+                }
+                handleMethodInfoMapping.put(requestPath,
+                        new HandlerMethodInfo(requestPath, method, supportedHttpMethods, clazz));
+            }
+            controllersMapping.put(basePath, (Controller) object);
+
+        }
+    }
+
+    private void doAutowired() {
+        for (Map.Entry<String,Object> entry : beanNameMap.entrySet()) {
+            try {
+                Object clazz = entry.getValue();
+                Field[] declaredFields = clazz.getClass().getDeclaredFields();
+                for (Field declaredField : declaredFields) {
+                    if (declaredField.isAnnotationPresent(Resource.class)) {
+                        String name = declaredField.getName();
+                        Object fieldObject = beanNameMap.get(name);
+
+                        declaredField.setAccessible(true);
+                        declaredField.set(clazz,fieldObject);
+                    }
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+    private void doInstanceBean() {
+        for (String classPath : classPathList) {
+            try {
+                Class<?> clazz = Class.forName(classPath);
+                if (clazz.isAnnotationPresent(MyComponent.class)
+                        || clazz.isAnnotationPresent(MyService.class)
+                        || clazz.isAnnotationPresent(MyRepository.class)) {
+                    Object object = clazz.newInstance();
+                    String simpleName = clazz.getSimpleName();
+                    beanNameMap.put(simpleName,object);
+
+                    Class<?>[] interfaces = clazz.getInterfaces();
+                    Class<?> clazzInterface = interfaces[0];
+                    String simpleNameInterface = clazzInterface.getSimpleName();
+
+                    beanNameMap.put(simpleNameInterface,object);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 扫描所有符合条件的类
+     */
+    private void doScanner(String scanPackage) {
+        String scanPackageUrl = "/" + scanPackage.replaceAll("\\.", "/");
+        URL resource = this.getClass().getClassLoader().getResource(scanPackageUrl);
+        File file = new File(resource.getFile());
+        File[] files = file.listFiles();
+        for (File filePackage : files) {
+            String fileName = filePackage.getName();
+
+            // 如果为文件夹
+            if (filePackage.isDirectory()) {
+                doScanner(scanPackage + "." + fileName);
+                continue;
+            }
+
+            // 不以class结尾
+            if (!fileName.endsWith(".class")) {
+                continue;
+            }
+
+            classPathList.add(scanPackage + "." + fileName.replace(".class", ""));
+        }
     }
 
     /**
@@ -56,19 +179,21 @@ public class FrontControllerServlet extends HttpServlet {
         for (Controller controller : ServiceLoader.load(Controller.class)) {
             Class<?> controllerClass = controller.getClass();
             Path pathFromClass = controllerClass.getAnnotation(Path.class);
-            String requestPath = pathFromClass.value();
-            Method[] publicMethods = controllerClass.getMethods();
+            String basePath = pathFromClass.value();
+            Method[] publicMethods = controllerClass.getDeclaredMethods();
             // 处理方法支持的 HTTP 方法集合
+
             for (Method method : publicMethods) {
                 Set<String> supportedHttpMethods = findSupportedHttpMethods(method);
                 Path pathFromMethod = method.getAnnotation(Path.class);
+                String requestPath = "";
                 if (pathFromMethod != null) {
-                    requestPath += pathFromMethod.value();
+                    requestPath = basePath + pathFromMethod.value();
                 }
                 handleMethodInfoMapping.put(requestPath,
-                        new HandlerMethodInfo(requestPath, method, supportedHttpMethods));
+                        new HandlerMethodInfo(requestPath, method, supportedHttpMethods, controllerClass));
             }
-            controllersMapping.put(requestPath, controller);
+            controllersMapping.put(basePath, controller);
         }
     }
 
@@ -111,20 +236,17 @@ public class FrontControllerServlet extends HttpServlet {
         String requestURI = request.getRequestURI();
         // contextPath  = /a or "/" or ""
         String servletContextPath = request.getContextPath();
-        String prefixPath = servletContextPath;
+        String prefixPath = substringAfter(requestURI,
+                StringUtils.replace(servletContextPath, "//", "/"));
         // 映射路径（子路径）
-        String requestMappingPath = substringAfter(requestURI,
-                StringUtils.replace(prefixPath, "//", "/"));
+        String requestMappingPath = StringUtils.substring(prefixPath, 0, StringUtils.lastIndexOf(prefixPath, "/"));
         // 映射到 Controller
         Controller controller = controllersMapping.get(requestMappingPath);
 
         if (controller != null) {
-
-            HandlerMethodInfo handlerMethodInfo = handleMethodInfoMapping.get(requestMappingPath);
-
+            HandlerMethodInfo handlerMethodInfo = handleMethodInfoMapping.get(prefixPath);
             try {
                 if (handlerMethodInfo != null) {
-
                     String httpMethod = request.getMethod();
 
                     if (!handlerMethodInfo.getSupportedHttpMethods().contains(httpMethod)) {
@@ -132,10 +254,12 @@ public class FrontControllerServlet extends HttpServlet {
                         response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                         return;
                     }
-
                     if (controller instanceof PageController) {
-                        PageController pageController = PageController.class.cast(controller);
-                        String viewPath = pageController.execute(request, response);
+                        Method handlerMethod = handlerMethodInfo.getHandlerMethod();
+                        String viewPath = (String) handlerMethod.invoke(handlerMethodInfo.getClazz().newInstance(), request, response);
+//                        PageController pageController = PageController.class.cast(controller);
+//                        // 执行方法
+//                        String viewPath = pageController.execute(request, response);
                         // 页面请求 forward
                         // request -> RequestDispatcher forward
                         // RequestDispatcher requestDispatcher = request.getRequestDispatcher(viewPath);
@@ -149,7 +273,10 @@ public class FrontControllerServlet extends HttpServlet {
                         requestDispatcher.forward(request, response);
                         return;
                     } else if (controller instanceof RestController) {
-                        // TODO
+                        Method handlerMethod = handlerMethodInfo.getHandlerMethod();
+                        String result = (String) handlerMethod.invoke(handlerMethodInfo.getClazz().newInstance(), request, response);
+                        response.getWriter().println(result);
+                        return;
                     }
 
                 }

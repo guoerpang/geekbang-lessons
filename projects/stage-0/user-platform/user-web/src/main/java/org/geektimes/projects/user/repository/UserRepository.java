@@ -22,5 +22,5 @@ public interface UserRepository {
 
     User getByNameAndPassword(String userName, String password);
 
-    Collection<User> getAll();
+    List<User> getAll();
 }

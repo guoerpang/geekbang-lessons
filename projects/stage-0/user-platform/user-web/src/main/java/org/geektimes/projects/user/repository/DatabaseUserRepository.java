@@ -71,7 +71,7 @@ public class DatabaseUserRepository implements UserRepository {
     }
 
     @Override
-    public Collection<User> getAll() {
+    public List<User> getAll() {
         return executeQuery("SELECT id,name,password,email,phoneNumber FROM users", resultSet -> {
             // BeanInfo -> IntrospectionException
             BeanInfo userBeanInfo = Introspector.getBeanInfo(User.class, Object.class);

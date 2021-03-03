@@ -46,7 +46,7 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
-    public Collection<User> getAll() {
-        return repository.values();
+    public List<User> getAll() {
+        return new ArrayList<>(repository.values());
     }
 }

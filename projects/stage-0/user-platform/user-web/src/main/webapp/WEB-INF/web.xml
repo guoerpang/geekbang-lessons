@@ -33,6 +33,10 @@
     <servlet>
         <servlet-name>FrontControllerServlet</servlet-name>
         <servlet-class>org.geektimes.web.mvc.FrontControllerServlet</servlet-class>
+        <init-param>
+            <param-name>scanPackage</param-name>
+            <param-value>org.geektimes.projects</param-value>
+        </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
 
