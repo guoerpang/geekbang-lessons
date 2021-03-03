@@ -3,7 +3,9 @@ package org.geektimes.projects.user.repository;
 import org.geektimes.function.ThrowableFunction;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.sql.DBConnectionManager;
+import org.geektimes.web.mvc.myannotation.MyRepository;
 
+import javax.swing.*;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -16,7 +18,17 @@ import java.util.logging.Logger;
 
 import static org.apache.commons.lang.ClassUtils.wrapperToPrimitive;
 
+@MyRepository
 public class DatabaseUserRepository implements UserRepository {
+
+    private DBConnectionManager dbConnectionManager;
+
+    public DatabaseUserRepository(DBConnectionManager dbConnectionManager) {
+        this.dbConnectionManager = dbConnectionManager;
+    }
+
+    public DatabaseUserRepository() {
+    }
 
     private static Logger logger = Logger.getLogger(DatabaseUserRepository.class.getName());
 
@@ -31,19 +43,15 @@ public class DatabaseUserRepository implements UserRepository {
 
     public static final String QUERY_ALL_USERS_DML_SQL = "SELECT id,name,password,email,phoneNumber FROM users";
 
-    private final DBConnectionManager dbConnectionManager;
-
-    public DatabaseUserRepository(DBConnectionManager dbConnectionManager) {
-        this.dbConnectionManager = dbConnectionManager;
-    }
-
-    private Connection getConnection() {
-        return dbConnectionManager.getConnection();
-    }
 
     @Override
     public boolean save(User user) {
-        return false;
+        Boolean execute = execute("INSERT INTO users(name,password,email,phoneNumber) VALUES (?,?,?,?)",
+                resultSet -> {
+                    return resultSet;
+                }, COMMON_EXCEPTION_HANDLER, user.getName(), user.getPassword(), user.getEmail(), user.getPhoneNumber());
+
+        return null == execute ? Boolean.FALSE : execute;
     }
 
     @Override
@@ -94,6 +102,8 @@ public class DatabaseUserRepository implements UserRepository {
                     // 以 id 为例，  user.setId(resultSet.getLong("id"));
                     setterMethodFromUser.invoke(user, resultValue);
                 }
+
+                users.add(user);
             }
             return users;
         }, e -> {
@@ -109,7 +119,7 @@ public class DatabaseUserRepository implements UserRepository {
      */
     protected <T> T executeQuery(String sql, ThrowableFunction<ResultSet, T> function,
                                  Consumer<Throwable> exceptionHandler, Object... args) {
-        Connection connection = getConnection();
+        Connection connection = DBConnectionManager.connection;
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             for (int i = 0; i < args.length; i++) {
@@ -127,6 +137,8 @@ public class DatabaseUserRepository implements UserRepository {
                 Method method = PreparedStatement.class.getMethod(methodName, wrapperType);
                 method.invoke(preparedStatement, i + 1, args);
             }
+
+
             ResultSet resultSet = preparedStatement.executeQuery();
             // 返回一个 POJO List -> ResultSet -> POJO List
             // ResultSet -> T
@@ -136,6 +148,39 @@ public class DatabaseUserRepository implements UserRepository {
         }
         return null;
     }
+
+    protected <T> T execute(String sql, ThrowableFunction<Boolean, T> function,
+                                 Consumer<Throwable> exceptionHandler, Object... args){
+        Connection connection = DBConnectionManager.connection;
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                Object arg = args[i];
+                Class argType = arg.getClass();
+
+                Class wrapperType = wrapperToPrimitive(argType);
+
+                if (wrapperType == null) {
+                    wrapperType = argType;
+                }
+
+                // Boolean -> boolean
+                String methodName = preparedStatementMethodMappings.get(argType);
+                Method method = PreparedStatement.class.getMethod(methodName, int.class,wrapperType);
+                method.invoke(preparedStatement, i + 1, arg);
+            }
+
+            boolean execute = preparedStatement.execute();
+            // 返回一个 POJO List -> ResultSet -> POJO List
+            // ResultSet -> T
+            return function.apply(execute);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
 
 
     private static String mapColumnLabel(String fieldName) {

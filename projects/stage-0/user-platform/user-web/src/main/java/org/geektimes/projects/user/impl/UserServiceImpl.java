@@ -3,7 +3,7 @@ package org.geektimes.projects.user.impl;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.repository.UserRepository;
 import org.geektimes.projects.user.service.UserService;
-//import org.geektimes.web.mvc.annotation.MyService;
+import org.geektimes.web.mvc.myannotation.MyService;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * @author GH
  */
-//@MyService
+@MyService
 public class UserServiceImpl implements UserService {
 
     @Resource

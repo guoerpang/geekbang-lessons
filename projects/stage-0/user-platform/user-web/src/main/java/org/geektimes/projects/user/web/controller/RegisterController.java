@@ -3,6 +3,7 @@ package org.geektimes.projects.user.web.controller;
 import org.geektimes.projects.user.domain.User;
 import org.geektimes.projects.user.service.UserService;
 import org.geektimes.web.mvc.controller.RestController;
+import org.geektimes.web.mvc.myannotation.MyController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import java.util.Map;
  * @author GH
  */
 @Path("/register")
+@MyController
 public class RegisterController implements RestController {
 
     @Resource
@@ -38,6 +40,8 @@ public class RegisterController implements RestController {
         return "注册成功";
     }
 
+    @GET
+    @Path("/getAll")
     public List<User> getAll(HttpServletRequest request, HttpServletResponse response){
 
         List<User> users = userService.getAll();

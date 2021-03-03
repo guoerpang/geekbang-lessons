@@ -14,27 +14,7 @@ import java.util.Properties;
 
 public class DBConnectionManager {
 
-    private Connection connection;
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public Connection getConnection() {
-        return this.connection;
-    }
-
-    public void releaseConnection() {
-        if (this.connection != null) {
-            try {
-                this.connection.close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e.getCause());
-            }
-        }
-    }
-
-    public static final String DROP_USERS_TABLE_DDL_SQL = "DROP TABLE users";
+    public static Connection connection;
 
     public static final String CREATE_USERS_TABLE_DDL_SQL = "CREATE TABLE users(" +
             "id INT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1), " +
@@ -43,6 +23,33 @@ public class DBConnectionManager {
             "email VARCHAR(64) NOT NULL, " +
             "phoneNumber VARCHAR(64) NOT NULL" +
             ")";
+    static {
+        Statement statement = null;
+        try {
+            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+            String databaseURL = "jdbc:derby:db/user-platform;create=true";
+            Connection connection = DriverManager.getConnection(databaseURL);
+            DBConnectionManager.connection = connection;
+            statement = connection.createStatement();
+            System.out.println(statement.execute(CREATE_USERS_TABLE_DDL_SQL)); // false
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+//    public void releaseConnection() {
+//        if (this.connection != null) {
+//            try {
+//                this.connection.close();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e.getCause());
+//            }
+//        }
+//    }
+
+    public static final String DROP_USERS_TABLE_DDL_SQL = "DROP TABLE users";
+
+
 
     public static final String INSERT_USER_DML_SQL = "INSERT INTO users(name,password,email,phoneNumber) VALUES " +
             "('A','******','a@gmail.com','1') , " +

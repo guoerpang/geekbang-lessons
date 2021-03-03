@@ -89,7 +89,7 @@ public class FrontControllerServlet extends HttpServlet {
                     requestPath = basePath + pathFromMethod.value();
                 }
                 handleMethodInfoMapping.put(requestPath,
-                        new HandlerMethodInfo(requestPath, method, supportedHttpMethods, clazz));
+                        new HandlerMethodInfo(requestPath, method, supportedHttpMethods, object));
             }
             controllersMapping.put(basePath, (Controller) object);
 
@@ -124,16 +124,20 @@ public class FrontControllerServlet extends HttpServlet {
                 Class<?> clazz = Class.forName(classPath);
                 if (clazz.isAnnotationPresent(MyComponent.class)
                         || clazz.isAnnotationPresent(MyService.class)
-                        || clazz.isAnnotationPresent(MyRepository.class)) {
+                        || clazz.isAnnotationPresent(MyRepository.class)
+                        || clazz.isAnnotationPresent(MyController.class)) {
                     Object object = clazz.newInstance();
                     String simpleName = clazz.getSimpleName();
-                    beanNameMap.put(simpleName,object);
+                    char[] charsSimpleName = simpleName.toCharArray();
+                    charsSimpleName[0] += 32;
+                    beanNameMap.put(String.valueOf(charsSimpleName),object);
 
                     Class<?>[] interfaces = clazz.getInterfaces();
                     Class<?> clazzInterface = interfaces[0];
                     String simpleNameInterface = clazzInterface.getSimpleName();
-
-                    beanNameMap.put(simpleNameInterface,object);
+                    char[] chars = simpleNameInterface.toCharArray();
+                    chars[0] += 32;
+                    beanNameMap.put(String.valueOf(chars),object);
                 }
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
@@ -144,6 +148,8 @@ public class FrontControllerServlet extends HttpServlet {
             }
         }
     }
+
+
 
     /**
      * 扫描所有符合条件的类
@@ -256,7 +262,7 @@ public class FrontControllerServlet extends HttpServlet {
                     }
                     if (controller instanceof PageController) {
                         Method handlerMethod = handlerMethodInfo.getHandlerMethod();
-                        String viewPath = (String) handlerMethod.invoke(handlerMethodInfo.getClazz().newInstance(), request, response);
+                        String viewPath = (String) handlerMethod.invoke(handlerMethodInfo.getObject(), request, response);
 //                        PageController pageController = PageController.class.cast(controller);
 //                        // 执行方法
 //                        String viewPath = pageController.execute(request, response);
@@ -274,7 +280,7 @@ public class FrontControllerServlet extends HttpServlet {
                         return;
                     } else if (controller instanceof RestController) {
                         Method handlerMethod = handlerMethodInfo.getHandlerMethod();
-                        String result = (String) handlerMethod.invoke(handlerMethodInfo.getClazz().newInstance(), request, response);
+                        Object result = (Object) handlerMethod.invoke(handlerMethodInfo.getObject(), request, response);
                         response.getWriter().println(result);
                         return;
                     }

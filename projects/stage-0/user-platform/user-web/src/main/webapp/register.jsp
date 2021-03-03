@@ -22,11 +22,10 @@
 			var obj = $('#register').serialize();
 			console.log("obj"+obj);
 			$.ajax({
-				url:"${pageContext.request.contextPath}/register/registerSave",
-				param:obj,
+				url:"${pageContext.request.contextPath}/register/registerSave?" + obj,
 				success:function(data){
-					// alert(data);
-					console.log("data:"+data);
+					alert(data);
+					// console.log("data:"+data);
 				}
 			});
 		});

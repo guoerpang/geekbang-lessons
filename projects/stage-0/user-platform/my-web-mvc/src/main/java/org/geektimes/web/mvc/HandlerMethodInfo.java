@@ -14,15 +14,15 @@ public class HandlerMethodInfo {
 
     private final Method handlerMethod;
 
-    private Class<?> clazz;
+    private Object object;
 
     private final Set<String> supportedHttpMethods;
 
-    public HandlerMethodInfo(String requestPath, Method handlerMethod, Set<String> supportedHttpMethods, Class<?> clazz) {
+    public HandlerMethodInfo(String requestPath, Method handlerMethod, Set<String> supportedHttpMethods, Object object) {
         this.requestPath = requestPath;
         this.handlerMethod = handlerMethod;
         this.supportedHttpMethods = supportedHttpMethods;
-        this.clazz = clazz;
+        this.object = object;
     }
 
     public String getRequestPath() {
@@ -37,7 +37,7 @@ public class HandlerMethodInfo {
         return supportedHttpMethods;
     }
 
-    public Class<?> getClazz() {
-        return clazz;
+    public Object getObject() {
+        return object;
     }
 }
