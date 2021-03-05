@@ -37,6 +37,8 @@ public class DBConnectionManager {
         }
     }
 
+
+
 //    public void releaseConnection() {
 //        if (this.connection != null) {
 //            try {
