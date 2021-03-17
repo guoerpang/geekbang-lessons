@@ -22,6 +22,7 @@ public class JolokiaConfigDemo {
         Map<String, Object> valueMap = resp.getValue();
         Set<String> keys = valueMap.keySet();
         Iterator<String> iter = keys.iterator();
+        // 循环遍历 User属性值
         while (iter.hasNext()) {
             String key = iter.next();
             System.out.println(key);
