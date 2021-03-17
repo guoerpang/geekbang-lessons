@@ -24,17 +24,17 @@ public class DBConnectionManager {
             "phoneNumber VARCHAR(64) NOT NULL" +
             ")";
     static {
-        Statement statement = null;
-        try {
-            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
-            String databaseURL = "jdbc:derby:db/user-platform;create=true";
-            Connection connection = DriverManager.getConnection(databaseURL);
-            DBConnectionManager.connection = connection;
-            statement = connection.createStatement();
-            System.out.println(statement.execute(CREATE_USERS_TABLE_DDL_SQL)); // false
-        } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+//        Statement statement = null;
+//        try {
+//            Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
+//            String databaseURL = "jdbc:derby:db/user-platform;create=true";
+//            Connection connection = DriverManager.getConnection(databaseURL);
+//            DBConnectionManager.connection = connection;
+//            statement = connection.createStatement();
+//            System.out.println(statement.execute(CREATE_USERS_TABLE_DDL_SQL)); // false
+//        } catch (SQLException | ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
     }
 
 

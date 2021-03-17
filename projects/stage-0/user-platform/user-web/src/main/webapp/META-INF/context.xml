@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Context>
+
+	<!-- url为数据库连接信息 -->
 	<Resource name="jdbc/UserPlatformDB"
               type="javax.sql.DataSource"  auth="Container"
               description="Derby database for User Platform"
@@ -7,5 +9,10 @@
               username="" password=""
               driverClassName="org.apache.derby.jdbc.EmbeddedDriver"
               url="jdbc:derby:db/user-platform;create=true"/>
+
+	<!-- FactoryBean -->
+	<Resource name="bean/DBConnectionManager" auth="Container"
+			  type="org.geektimes.projects.user.sql.DBConnectionManager"
+			  factory="org.apache.naming.factory.BeanFactory" />
 
 </Context>
