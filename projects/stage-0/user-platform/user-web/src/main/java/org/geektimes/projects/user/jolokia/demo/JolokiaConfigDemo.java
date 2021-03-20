@@ -4,7 +4,6 @@ import org.jolokia.client.J4pClient;
 import org.jolokia.client.request.J4pReadRequest;
 import org.jolokia.client.request.J4pReadResponse;
 
-import javax.management.MalformedObjectNameException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
