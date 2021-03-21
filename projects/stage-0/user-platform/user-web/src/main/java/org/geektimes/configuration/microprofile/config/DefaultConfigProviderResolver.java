@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+// org.eclipse.microprofile.config.spi.ConfigProviderResolver.instance
 public class DefaultConfigProviderResolver extends ConfigProviderResolver {
 
     private ConcurrentMap<ClassLoader, Config> configsRepository = new ConcurrentHashMap<>();

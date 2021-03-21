@@ -39,6 +39,9 @@ public class User {
     @PhoneNumber
     private String phoneNumber;
 
+
+    private Integer age;
+
     public Long getId() {
         return id;
     }
@@ -84,12 +87,17 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(id, user.id) && Objects.equals(name, user.name) && Objects.equals(password, user.password) && Objects.equals(email, user.email) && Objects.equals(phoneNumber, user.phoneNumber);
+        return Objects.equals(id, user.id)
+                && Objects.equals(name, user.name)
+                && Objects.equals(password, user.password)
+                && Objects.equals(email, user.email)
+                && Objects.equals(phoneNumber, user.phoneNumber)
+                && Objects.equals(age,user.age);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, password, email, phoneNumber);
+        return Objects.hash(id, name, password, email, phoneNumber,age);
     }
 
     @Override
@@ -100,6 +108,7 @@ public class User {
                 ", password='" + password + '\'' +
                 ", email='" + email + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
+                ", age='" + age + '\'' +
                 '}';
     }
 }

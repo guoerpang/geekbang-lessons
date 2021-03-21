@@ -1,6 +1,9 @@
 package jdk.parameterizedtype.converter;
 
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigBuilder;
+import org.geektimes.configuration.microprofile.config.DefaultConfigProviderResolver;
 import org.geektimes.configuration.microprofile.config.converter.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,4 +32,17 @@ public class ConvertersTest {
         assertEquals(Double.class, converters.resolveConvertedType(new DoubleConverter()));
         assertEquals(String.class, converters.resolveConvertedType(new StringConverter()));
     }
+
+
+    @Test
+    public void testDefaultConfig() {
+        ConfigBuilder builder = new DefaultConfigProviderResolver().getBuilder();
+        builder.addDefaultSources();
+        builder.addDiscoveredConverters();
+        Config build = builder.build();
+        String javaVersion = build.getValue("java.version", String.class);
+        System.out.println("java.version：" + javaVersion);
+
+    }
+
 }
